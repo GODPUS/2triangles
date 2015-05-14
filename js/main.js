@@ -28,7 +28,6 @@
         container.appendChild( renderer.domElement );
 
         composer = new THREE.EffectComposer( renderer );
-        composer.addPass( new THREE.RenderPass( scene, camera ) );
 
         uniforms = {
             uTime: { type: "f", value: 1.0 },
@@ -70,7 +69,7 @@
     
     function updateUniforms(){
         time = ( Date.now() - startTime ) / 1000;
-
+        
         $.each(passes, function( index, pass ){
             pass.uniforms.uTime.value = time;
         });

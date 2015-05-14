@@ -17,7 +17,7 @@ void main() {
     }
 
     if( distance( normPos, normCenter ) < 0.1 ){
-        outColor = vec4( 1.0, 1.0, 1.0, 1.0 ); //yellow
+        outColor = vec4( 1.0, 1.0, 0.0, 1.0 ); //yellow
     }
 
     gl_FragColor = outColor;
