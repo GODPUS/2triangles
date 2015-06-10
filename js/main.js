@@ -4,9 +4,9 @@
     var camera, scene, renderer, composer;
     var uniforms;
     var shaders = {};
-    var passes = [];
     var startTime = Date.now();
     var time = 0;
+    var lastPass = null;
 
     loadShaders( 'glsl/', ['main.vs', 'main.fs', 'pass1.fs', 'pass2.fs'], function(_shaders){
         shaders = _shaders;
@@ -34,15 +34,12 @@
             uResolution: { type: "v2", value: new THREE.Vector2() }
         };
 
-        passes.push( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.main }) );
-        passes.push( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.pass1 }) );
-        passes.push( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.pass2 }) );
+        composer.addPass( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.main }) );
+        composer.addPass( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.pass1 }) );
+        composer.addPass( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.pass2 }) );
 
-        passes[passes.length-1].renderToScreen = true;
-
-        $.each(passes, function( index, pass ){
-            composer.addPass( pass );
-        });
+        lastPass = composer.passes[composer.passes.length-1];
+        lastPass.renderToScreen = true;
 
         onWindowResize();
         window.addEventListener( 'resize', onWindowResize, false );
@@ -51,7 +48,7 @@
     function onWindowResize( event ) {
         composer.setSize( window.innerWidth, window.innerHeight );
 
-        $.each(passes, function( index, pass ){
+        $.each(composer.passes, function( index, pass ){
             pass.uniforms.uResolution.value.x = window.innerWidth;
             pass.uniforms.uResolution.value.y = window.innerHeight;
         });
@@ -69,8 +66,8 @@
     
     function updateUniforms(){
         time = ( Date.now() - startTime ) / 1000;
-        
-        $.each(passes, function( index, pass ){
+
+        $.each(composer.passes, function( index, pass ){
             pass.uniforms.uTime.value = time;
         });
     }

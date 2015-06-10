@@ -29,30 +29,28 @@ THREE.ShaderPass = function ( shader, textureID ) {
 	this.scene  = new THREE.Scene();
 
 	this.quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2, 2 ), null );
+	this.quad.material = this.material;
 	this.scene.add( this.quad );
 
+	this.renderTargets = [];
 };
 
 THREE.ShaderPass.prototype = {
 
-	render: function ( renderer, writeBuffer, readBuffer, delta ) {
+	addRenderTarget: function() {
+
+	},
+
+	render: function ( renderer, writeBuffer, readBuffer ) {
 
 		if ( this.uniforms[ this.textureID ] ) {
-
 			this.uniforms[ this.textureID ].value = readBuffer;
-
 		}
 
-		this.quad.material = this.material;
+		renderer.render( this.scene, this.camera, writeBuffer, this.clear );
 
 		if ( this.renderToScreen ) {
-
 			renderer.render( this.scene, this.camera );
-
-		} else {
-
-			renderer.render( this.scene, this.camera, writeBuffer, this.clear );
-
 		}
 
 	}

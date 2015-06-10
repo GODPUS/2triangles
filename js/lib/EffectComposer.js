@@ -12,7 +12,7 @@ THREE.EffectComposer = function ( renderer, renderTarget ) {
 
 		var width  = Math.floor( renderer.context.canvas.width  / pixelRatio ) || 1;
 		var height = Math.floor( renderer.context.canvas.height / pixelRatio ) || 1;
-		var parameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBuffer: false };
+		var parameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, stencilBuffer: false };
 
 		renderTarget = new THREE.WebGLRenderTarget( width, height, parameters );
 
@@ -57,50 +57,21 @@ THREE.EffectComposer.prototype = {
 
 	render: function ( delta ) {
 
-		this.writeBuffer = this.renderTarget1;
-		this.readBuffer = this.renderTarget2;
-
-		var maskActive = false;
-
 		var pass, i, il = this.passes.length;
 
-		for ( i = 0; i < il; i ++ ) {
+		for (i = 0; i < il; i ++ ) {
 
 			pass = this.passes[ i ];
 
 			if ( !pass.enabled ) continue;
 
-			pass.render( this.renderer, this.writeBuffer, this.readBuffer, delta, maskActive );
+			pass.render( this.renderer, this.writeBuffer, this.readBuffer );
 
 			if ( pass.needsSwap ) {
-
-				if ( maskActive ) {
-
-					var context = this.renderer.context;
-
-					context.stencilFunc( context.NOTEQUAL, 1, 0xffffffff );
-
-					this.copyPass.render( this.renderer, this.writeBuffer, this.readBuffer, delta );
-
-					context.stencilFunc( context.EQUAL, 1, 0xffffffff );
-
-				}
 
 				this.swapBuffers();
 
 			}
-
-			/*
-			if ( pass instanceof THREE.MaskPass ) {
-
-				maskActive = true;
-
-			} else if ( pass instanceof THREE.ClearMaskPass ) {
-
-				maskActive = false;
-
-			}
-			*/
 
 		}
 

@@ -13,11 +13,12 @@ void main() {
     vec2 normPos = gl_FragCoord.xy / uResolution.xy;
     vec2 normCenter = vec2( 0.5, 0.5 );
 
-    vec4 texture = texture2D(uTexture, normPos);
+    float angle = uTime;
+    float amount = 0.05;
+    vec2 offset = amount * vec2( cos(angle), sin(angle));
+    vec4 cr = texture2D(uTexture, normPos + offset);
+    vec4 cga = texture2D(uTexture, normPos);
+    vec4 cb = texture2D(uTexture, normPos - offset);
 
-    outColor.r = texture.r + normPos.x;
-    outColor.g = texture.g + normPos.y;
-    outColor.b = texture.g + cos(uTime);
-
-    gl_FragColor = outColor;
+    gl_FragColor = vec4(cr.r, cr.g, cr.b, cga.a);
 }

@@ -1,24 +1,216 @@
+// Conway's Game of Life, by Michael Parisi
+// we store the state of the pixel and the hue shift value in the alpha channel
+// cell is on if alpha is 1.
+// cell that has always been dead has rgba of 0.
+// cell that was once alive has alpha between 0. and 0.999 (the hue shift value)
+
 #ifdef GL_ES
 precision mediump float;
 #endif
 
 uniform vec2 uResolution;
 uniform float uTime;
+uniform sampler2D uTexture;
 
-void main() {
-    vec4 outColor = vec4( vec3( 0.0 ), 1.0 );
-    vec2 pos = gl_FragCoord.xy;
-    vec2 center = uResolution.xy / 2.0;
-    vec2 normPos = gl_FragCoord.xy / uResolution.xy;
-    vec2 normCenter = vec2( 0.5, 0.5 );
+const float PI = 3.14159265359;
+const float COLOR_SPEED = 0.006; //higher is faster //values between 0.1 and 0.004 work best
+const float SQRT3 = 1.73205080757;
 
-    if( distance( pos, center ) < 300.0 ){
-        outColor = vec4( 1.0, 0.0, 0.0, 1.0 ); //red
+float RADIUS    = 100.; 
+float THICKNESS = 2.; //the square requires a thickness of at least 2.
+vec2 MIDDLE     = vec2(uResolution.x/2.,uResolution.y/2.);
+bool CHECK_SHAPE_ONCE = false;
+
+float GRADIENT_FREQUENCY = .0005;
+#define GRADIENT
+
+//#define CHECK_SQUARE
+//#define CHECK_CIRCLE
+//#define CHECK_SEED_OF_LIFE
+//#define CHECK_MOUSE
+
+#define CHECK_FLOWER_OF_LIFE
+const float NUM_FLOWER_LAYERS = 4.;
+float FLOWER_CIRCLE_RADIUS = RADIUS; //do RADIUS/2. for metatron
+
+vec3 hueToRGB(float hue) {
+    return clamp( 
+        abs(mod(hue * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 
+        0.0, 1.0);
+}
+
+float countNeighbours() {
+    
+    vec2 left      = vec2(gl_FragCoord.x-1., gl_FragCoord.y)/uResolution;
+    vec2 right     = vec2(gl_FragCoord.x+1., gl_FragCoord.y)/uResolution;
+    vec2 up        = vec2(gl_FragCoord.x, gl_FragCoord.y+1.)/uResolution;
+    vec2 down      = vec2(gl_FragCoord.x, gl_FragCoord.y-1.)/uResolution;    
+    vec2 upleft    = vec2(gl_FragCoord.x-1., gl_FragCoord.y+1.)/uResolution;
+    vec2 upright   = vec2(gl_FragCoord.x+1., gl_FragCoord.y+1.)/uResolution;
+    vec2 downleft  = vec2(gl_FragCoord.x-1., gl_FragCoord.y-1.)/uResolution;
+    vec2 downright = vec2(gl_FragCoord.x+1., gl_FragCoord.y-1.)/uResolution; 
+    
+    float oldLeft  = texture2D(uTexture, left).a;
+    if(oldLeft < 1.){ oldLeft = 0.; }
+    float oldRight = texture2D(uTexture, right).a;
+    if(oldRight < 1.){ oldRight = 0.; }
+    float oldUp    = texture2D(uTexture, up).a;
+    if(oldUp < 1.){ oldUp = 0.; }
+    float oldDown  = texture2D(uTexture, down).a;
+    if(oldDown < 1.){ oldDown = 0.; }
+    float oldul    = texture2D(uTexture, upleft).a;
+    if(oldul < 1.){ oldul = 0.; }
+    float oldur    = texture2D(uTexture, upright).a;
+    if(oldur < 1.){ oldur = 0.; }
+    float olddl    = texture2D(uTexture, downleft).a;
+    if(olddl < 1.){ olddl = 0.; }
+    float olddr    = texture2D(uTexture, downright).a;    
+    if(olddr < 1.){ olddr = 0.; }
+    
+    return oldLeft + oldRight + oldDown + oldUp + oldul + oldur + olddl + olddr;
+}
+
+float shapeCheck(float outColorAlpha) {
+    
+    #ifdef CHECK_SQUARE
+        if(gl_FragCoord.x > MIDDLE.x-(RADIUS) && gl_FragCoord.x < MIDDLE.x+RADIUS && gl_FragCoord.y > MIDDLE.y-RADIUS && gl_FragCoord.y < MIDDLE.y+RADIUS){
+          
+            if(gl_FragCoord.x < MIDDLE.x-(RADIUS-THICKNESS) || gl_FragCoord.x > MIDDLE.x+(RADIUS-THICKNESS) || gl_FragCoord.y < MIDDLE.y-(RADIUS-THICKNESS) || gl_FragCoord.y > MIDDLE.y+(RADIUS-THICKNESS)){
+                outColorAlpha = 1.;
+            }
+        }
+    #endif
+
+    #ifdef CHECK_CIRCLE
+        if(distance(gl_FragCoord.xy, MIDDLE) < RADIUS && distance(gl_FragCoord.xy, MIDDLE) > (RADIUS-THICKNESS) ){ outColorAlpha = 1.; }
+    #endif
+
+    #ifdef CHECK_FLOWER_OF_LIFE
+        vec2 position = vec2(0.);
+
+        for(float i = 0.; i < NUM_FLOWER_LAYERS; i++)
+        {       
+            for(float j = 0.; j < 6.; j++){
+                
+                for(float k = 0.; k < NUM_FLOWER_LAYERS; k++){
+                    if(k <= i)
+                    {
+                        float angle = (float(j)*60.)+30.;
+                        float angle2 = angle+120.;
+                        angle *= 0.0174532925; //degrees to radians
+                        angle2 *= 0.0174532925; //degrees to radians
+                        
+                        
+                        position.x = MIDDLE.x+(cos(angle)*(RADIUS*i));
+                        position.x += (cos(angle2)*RADIUS)*k;
+                        position.y = MIDDLE.y+(sin(angle)*(RADIUS*i));
+                        position.y += (sin(angle2)*RADIUS)*k;
+                        
+                        if(distance(gl_FragCoord.xy, position) < FLOWER_CIRCLE_RADIUS && distance(gl_FragCoord.xy, position) > (FLOWER_CIRCLE_RADIUS-THICKNESS) )
+                        {
+                            outColorAlpha = 1.;
+                        }
+                        
+                    }else{
+                        break;
+                    }
+                }
+            }
+                
+        }
+        
+        //center circle
+        //if(distance(gl_FragCoord.xy, MIDDLE) < FLOWER_CIRCLE_RADIUS && distance(gl_FragCoord.xy, MIDDLE) > (FLOWER_CIRCLE_RADIUS-THICKNESS) ){ outColorAlpha = 1.; }
+    #endif
+    
+    #ifdef CHECK_SEED_OF_LIFE
+        int initialNum = 6;
+
+        for(int j = 1; j <= 2; j++)
+        {
+            int numCircles = (initialNum*j);
+
+            for(int i = 1; i <= 10000; i++)
+            {   
+                if(i <= numCircles)
+                {
+                    float rotation = 30.;
+                    //rotation = uTime*10.; //spinning
+                    
+                    float angle = (((360./float(numCircles))*float(i))+rotation)*0.0174532925; //0.0174532925 degrees in a radian
+                    vec2 circleCenter = vec2(-100., -100.);
+
+                    if(mod(float(i), float(j)) == 0.)
+                    {
+                        circleCenter = vec2(MIDDLE.x+(cos(angle)*((RADIUS*2.)*float(j))), MIDDLE.y+(sin(angle)*((RADIUS*2.)*float(j))));
+                    }else{
+                        //circleCenter = vec2(MIDDLE.x+(cos(angle)*((RADIUS*SQRT3)*float(j))), MIDDLE.y+(sin(angle)*((RADIUS*SQRT3)*float(j))));
+                        //break;
+                    }
+
+                    if(distance(gl_FragCoord.xy, circleCenter) < (RADIUS) && distance(gl_FragCoord.xy, circleCenter) > ((RADIUS)-THICKNESS) )
+                    {
+                        outColorAlpha = 1.;
+                    }
+                }else{
+                    break;
+                }
+            }
+        }
+        
+
+        //center circle
+        if(distance(gl_FragCoord.xy, MIDDLE) < (RADIUS) && distance(gl_FragCoord.xy, MIDDLE) > ((RADIUS)-THICKNESS) ){ outColorAlpha = 1.; }
+    #endif
+    
+    
+    return outColorAlpha;
+}
+
+
+
+void main(void) {
+    float distanceToCenter = 0.;
+    
+    #ifdef GRADIENT
+        distanceToCenter = distance(gl_FragCoord.xy, MIDDLE.xy)*GRADIENT_FREQUENCY;
+    #endif
+    
+    vec4 outColor = vec4(0.);
+    vec4 oldColor = texture2D(uTexture, gl_FragCoord.xy/uResolution);
+    
+    float n = countNeighbours();
+    
+    float newColorHueShiftAmount = abs(uTime*(COLOR_SPEED*16.666)+(distanceToCenter)); //16.666 is a ratio between the uTime and COLOR_SPEED... I assume it is the framerate
+    newColorHueShiftAmount = (newColorHueShiftAmount - floor(newColorHueShiftAmount));
+    if(newColorHueShiftAmount >= 1.){ newColorHueShiftAmount = 0.; }
+    
+    if(oldColor.a == 1.){
+        if(n < 2.){ outColor.a = newColorHueShiftAmount; }   //Any live cell with fewer than two live neighbours dies, as if caused by under-population.
+        if(n == 2. || n == 3.){ outColor.a = 1.; }         //Any live cell with two or three live neighbours lives on to the next generation.
+        if(n > 3.){ outColor.a = newColorHueShiftAmount; } //Any live cell with more than three live neighbours dies, as if by overcrowding.
+    }else if(oldColor.rgb == vec3(0.)){
+        if(n == 3.){ outColor.a = 1.; }           //Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+    }else{
+        if(n == 3.){ 
+            outColor.a = 1.; 
+        }else{ 
+            outColor.a = oldColor.a+COLOR_SPEED; //hue shift old color if not black
+            if(outColor.a >= 1.){ outColor.a = 0.; } 
+        }
     }
-
-    if( distance( normPos, normCenter ) < 0.1 ){
-        outColor = vec4( 1.0, 1.0, 0.0, 1.0 ); //yellow
-    }
-
+    
+    //check to see if we are within any of the shapes that keep a cell on
+    if(CHECK_SHAPE_ONCE && oldColor.rgb == vec3(0.)){ 
+        outColor.a = shapeCheck(outColor.a); //run once
+    }else if(!CHECK_SHAPE_ONCE){
+        outColor.a = shapeCheck(outColor.a); //run every frame
+    } 
+    
+    if(outColor.a < 1. && oldColor.rgb != vec3(0.)){ outColor.rgb = hueToRGB(outColor.a); } //if cell is dead use old hue shift amount
+    if(outColor.a == 1.){ outColor.rgb = hueToRGB(newColorHueShiftAmount);  } //if cell is alive use new hue shift amount
+    
+    //if(outColor.a == 1.){ outColor.rgb = vec3(1.0); } //black and white
+    
     gl_FragColor = outColor;
 }
