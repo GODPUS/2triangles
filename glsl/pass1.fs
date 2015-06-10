@@ -18,7 +18,6 @@ void main() {
     vec2 offset = amount * vec2( cos(angle), sin(angle));
     vec4 cr = texture2D(uTexture, normPos + offset);
     vec4 cga = texture2D(uTexture, normPos);
-    vec4 cb = texture2D(uTexture, normPos - offset);
 
     gl_FragColor = vec4(cr.r, cr.g, cr.b, cga.a);
 }
