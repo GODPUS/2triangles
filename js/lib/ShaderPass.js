@@ -31,15 +31,9 @@ THREE.ShaderPass = function ( shader, textureID ) {
 	this.quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2, 2 ), null );
 	this.quad.material = this.material;
 	this.scene.add( this.quad );
-
-	this.renderTargets = [];
 };
 
 THREE.ShaderPass.prototype = {
-
-	addRenderTarget: function() {
-
-	},
 
 	render: function ( renderer, writeBuffer, readBuffer ) {
 
