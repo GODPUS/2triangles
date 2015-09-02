@@ -5,6 +5,7 @@ precision mediump float;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform sampler2D uTexture;
+uniform sampler2D uWebcam;
 
 void main() {
     vec4 outColor = vec4( vec3( 0.0 ), 1.0 );
@@ -19,5 +20,8 @@ void main() {
     vec4 cr = texture2D(uTexture, normPos + offset);
     vec4 cga = texture2D(uTexture, normPos);
 
-    gl_FragColor = vec4(cr.r, cr.g, cr.b, cga.a);
+    gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
+
+    vec4 tex = texture2D(uTexture, normPos);
+    gl_FragColor = vec4(vec3(texture2D(uWebcam, normPos).rgb+tex.rgb), tex.a);
 }
