@@ -4,7 +4,8 @@
         var editor = CodeMirror.fromTextArea($('.code')[0], {
             keyMap: 'sublime',
             lineNumbers: true,
-            theme: 'monokai'
+            theme: 'monokai',
+            mode: 'x-shader/x-fragment'
         });
         
         var USE_WEB_CAM = false;
