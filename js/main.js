@@ -43,13 +43,13 @@
                 uniforms.uWebcam = { type: "t", value: webcamTexture };
             }
 
-            addPass();
+            addShader();
 
             onWindowResize();
             window.addEventListener( 'resize', onWindowResize, false );
         }
 
-        function addPass(){
+        function addShader(){
             var $tabButton = $('<button id="shader-tab-button--'+idCounter+'" class="shader-tab-button" data-shader-id="'+idCounter+'">Shader #'+idCounter+'</button>');
             $tabButton.appendTo($('#shader-tab-buttons'));
             $tabButton.click(function(){ activateTab($(this).data('shader-id')); });
@@ -149,7 +149,7 @@
             });
         }
 
-        $('#add-shader-button').click(function(){ addPass(); });
+        $('#add-shader-button').click(function(){ addShader(); });
 
         init();
         animate();

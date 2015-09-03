@@ -126,6 +126,6 @@ void main() {
     vec2 center = uResolution.xy / 2.0;
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
     
-    gl_FragColor = vec4(uv.x, uv.y, cos(uTime), 1.0);
+    gl_FragColor = vec4(uv.x, uv.y, abs(cos(uTime)), 1.0);
 }
 </script>
