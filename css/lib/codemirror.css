@@ -339,9 +339,7 @@ span.CodeMirror-selectedtext { background: none; }
 
 /* Based on Sublime Text's Monokai theme */
 
-.cm-s-monokai.CodeMirror { background: rgba(39, 40, 34, 0.9); opacity: 0.5; color: #f8f8f2; }
-.cm-s-monokai.CodeMirror:hover { opacity: 1; }
-.cm-s-monokai.CodeMirror:focus { opacity: 1; }
+.cm-s-monokai.CodeMirror { background: rgba(39, 40, 34, 0.9); color: #f8f8f2; }
 .cm-s-monokai div.CodeMirror-selected { background: #49483E; }
 .cm-s-monokai .CodeMirror-line::selection, .cm-s-monokai .CodeMirror-line > span::selection, .cm-s-monokai .CodeMirror-line > span > span::selection { background: rgba(73, 72, 62, .99); }
 .cm-s-monokai .CodeMirror-line::-moz-selection, .cm-s-monokai .CodeMirror-line > span::-moz-selection, .cm-s-monokai .CodeMirror-line > span > span::-moz-selection { background: rgba(73, 72, 62, .99); }
@@ -374,6 +372,3 @@ span.CodeMirror-selectedtext { background: none; }
   text-decoration: underline;
   color: white !important;
 }
-
-.cm-s-monokai .CodeMirror-lines { padding: 10px 0; }
-.cm-s-monokai .CodeMirror-line  { padding: 0 10px; }

@@ -1,12 +1,5 @@
 ;(function($){
     $(function(){
-
-        var editor = CodeMirror.fromTextArea($('.code')[0], {
-            keyMap: 'sublime',
-            lineNumbers: true,
-            theme: 'monokai',
-            mode: 'x-shader/x-fragment'
-        });
         
         var USE_WEB_CAM = false;
         var container;
@@ -18,21 +11,11 @@
         var lastPass = null;
         var webcam = null;
         var webcamTexture = null;
+        var vs = $('#vs').text().trim();
+        var fs = $('#fs').text().trim();
 
-        loadShaders( 'glsl/', ['main.vs', 'main.fs', 'pass1.fs', 'pass2.fs'], function(_shaders){
-            shaders = _shaders;
-            console.log(shaders);
-
-            if(USE_WEB_CAM){
-                getWebcamVideo(function(){
-                    init();
-                    animate();
-                });
-            }else{
-                init();
-                animate();
-            }
-        });
+        var idCounter = 1;
+        var shaders = {};
 
         function init() {
             container = document.getElementById( 'container' );
@@ -60,24 +43,64 @@
                 uniforms.uWebcam = { type: "t", value: webcamTexture };
             }
 
-            composer.addPass( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.main }) );
-            composer.addPass( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.pass1 }) );
-            //composer.addPass( new THREE.ShaderPass({ uniforms: uniforms, vertexShader: shaders.vs.main, fragmentShader: shaders.fs.pass2 }) );
-
-            lastPass = composer.passes[composer.passes.length-1];
-            lastPass.renderToScreen = true;
+            addPass();
 
             onWindowResize();
             window.addEventListener( 'resize', onWindowResize, false );
         }
 
+        function addPass(){
+            var $tabButton = $('<button id="shader-tab-button--'+idCounter+'" class="shader-tab-button" data-shader-id="'+idCounter+'">Shader #'+idCounter+'</button>');
+            $tabButton.appendTo($('#shader-tab-buttons'));
+            $tabButton.click(function(){ activateTab($(this).data('shader-id')); });
+
+            var $textArea = $('<textarea id="shader-tab-pane--'+idCounter+'" class="shader-tab-pane"></textarea>');
+            $textArea.text(fs);
+            $textArea.appendTo($('#shader-tab-panes'));
+
+            var editor = CodeMirror.fromTextArea($textArea[0], {
+                keyMap: 'sublime',
+                lineNumbers: true,
+                theme: 'monokai',
+                mode: 'x-shader/x-fragment'
+            });
+
+            var pass = new THREE.ShaderPass({ uniforms: uniforms, vertexShader: vs, fragmentShader: fs });
+            composer.addPass(pass);
+            lastPass = composer.passes[composer.passes.length-1];
+            lastPass.renderToScreen = true;
+
+            shaders[idCounter] = {
+                'id': idCounter,
+                'editor': editor,
+                '$editor': $(editor.getWrapperElement()),
+                '$tabButton': $tabButton,
+                '$textArea': $textArea,
+                'pass': pass
+            };
+
+            editor.on('change', function(){
+                pass.material.fragmentShader = editor.getValue();
+                pass.material.needsUpdate = true;
+            });
+
+            activateTab(idCounter);
+
+            idCounter++;
+
+            render();
+        }
+
+        function activateTab(id){
+            $.each(shaders, function(key, shader){
+                var isID = key.toString() === id.toString();
+                shader.$editor.toggleClass('active', isID);
+                shader.$tabButton.toggleClass('active', isID);
+            });
+        }
+
         function onWindowResize( event ) {
             composer.setSize( window.innerWidth, window.innerHeight );
-
-            $.each(composer.passes, function( index, pass ){
-                pass.uniforms.uResolution.value.x = window.innerWidth;
-                pass.uniforms.uResolution.value.y = window.innerHeight;
-            });
         }
 
         function animate() {
@@ -97,6 +120,8 @@
             $.each(composer.passes, function( index, pass ){
                 if(webcam && webcamTexture){ pass.uniforms.uWebcam.value = webcamTexture; }
                 pass.uniforms.uTime.value = time;
+                pass.uniforms.uResolution.value.x = window.innerWidth;
+                pass.uniforms.uResolution.value.y = window.innerHeight;
             });
         }
 
@@ -123,6 +148,11 @@
                 callback();
             });
         }
+
+        $('#add-shader-button').click(function(){ addPass(); });
+
+        init();
+        animate();
 
     });
 })(jQuery);
