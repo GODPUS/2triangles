@@ -13,6 +13,7 @@
         var webcamTexture = null;
         var vs = $('#vs').text().trim();
         var fs = $('#fs').text().trim();
+        var mouse = { x: 0.5, y: 0.5 };
 
         var idCounter = 1;
         var shaders = {};
@@ -33,7 +34,8 @@
             
             uniforms = {
                 uTime: { type: "f", value: 1.0 },
-                uResolution: { type: "v2", value: new THREE.Vector2() }
+                uResolution: { type: "v2", value: new THREE.Vector2() },
+                uMouse: { type: "v2", value: new THREE.Vector2() }
             };
 
             if(webcam){
@@ -47,6 +49,11 @@
 
             onWindowResize();
             window.addEventListener( 'resize', onWindowResize, false );
+
+            $(document).on('mousemove', function(event){
+                mouse.x = event.pageX/window.innerWidth;
+                mouse.y = event.pageY/window.innerHeight;
+            });
         }
 
         function addShader(){
@@ -122,6 +129,8 @@
                 pass.uniforms.uTime.value = time;
                 pass.uniforms.uResolution.value.x = window.innerWidth;
                 pass.uniforms.uResolution.value.y = window.innerHeight;
+                pass.uniforms.uMouse.value.x = mouse.x;
+                pass.uniforms.uMouse.value.y = mouse.y;
             });
         }
 

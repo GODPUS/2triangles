@@ -115,10 +115,12 @@ void main() {
 precision mediump float;
 #endif
 
-uniform vec2 uResolution;
 uniform float uTime;
+uniform vec2 uResolution;
+uniform vec2 uMouse;
 uniform sampler2D uTexture;
 uniform sampler2D uWebcam;
+
 
 void main() {
     vec4 outColor = vec4( vec3( 0.0 ), 1.0 );
@@ -126,6 +128,6 @@ void main() {
     vec2 center = uResolution.xy / 2.0;
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
     
-    gl_FragColor = vec4(uv.x, uv.y, abs(cos(uTime)), 1.0);
+    gl_FragColor = vec4(uv.x+uMouse.x, uv.y+uMouse.y, abs(cos(uTime)), 1.0);
 }
 </script>
