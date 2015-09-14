@@ -4,7 +4,7 @@
 
 THREE.ShaderPass = function ( shader, textureID ) {
 
-	this.textureID = ( textureID !== undefined ) ? textureID : "uTexture";
+	this.textureID = ( textureID !== undefined ) ? textureID : "texture";
 
 	this.uniforms = THREE.UniformsUtils.clone( shader.uniforms );
 	this.uniforms[ this.textureID ] = { type: "t", value: null };

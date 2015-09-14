@@ -12,10 +12,15 @@
             overflow: hidden;
         }
 
-        .container {
+        #container {
             position: relative;
             width: 100%;
             height: 100%;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         #codemirror-container {
@@ -26,6 +31,11 @@
             height: 88%;
             min-width: 800px;
             opacity: 0.5;
+            transition: opacity 0.5s;
+        }
+
+        #codemirror-container.disabled {
+            opacity: 0 !important;
         }
 
         #codemirror-container:hover, #codemirror-container:focus {
@@ -99,6 +109,7 @@
         <script src="js/lib/codemirror.js"></script>
         <script src="js/lib/codemirror-clike.js"></script>
         <script src="js/lib/codemirror-keymap-sublime.js"></script>
+        <script src="js/lib/dat.gui.js"></script>
         <script src="js/helpers.js"></script>
         <script src="js/main.js"></script>
     </body>
@@ -115,18 +126,17 @@ void main() {
 precision mediump float;
 #endif
 
-uniform float uTime;
-uniform vec2 uResolution;
-uniform vec2 uMouse;
-uniform sampler2D uTexture;
-uniform sampler2D uWebcam;
-
+uniform float time;
+uniform vec2 resolution;
+uniform vec2 mouse;
+uniform sampler2D webcam;
+uniform sampler2D texture;
 
 void main() {
     vec4 outColor = vec4( vec3( 0.0 ), 1.0 );
     vec2 pos = gl_FragCoord.xy;
-    vec2 center = uResolution.xy / 2.0;
-    vec2 uv = gl_FragCoord.xy / uResolution.xy;
+    vec2 center = resolution.xy / 2.0;
+    vec2 uv = gl_FragCoord.xy / resolution.xy;
     
     gl_FragColor = vec4(vec3(uv.x), 1.0);
 }

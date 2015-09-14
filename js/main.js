@@ -14,6 +14,9 @@
         var vs = $('#vs').text().trim();
         var fs = $('#fs').text().trim();
         var mouse = { x: 0.5, y: 0.5 };
+        var controls = null;
+        var gui = null;
+        var QUALITY = 1;
 
         var idCounter = 1;
         var shaders = {};
@@ -33,16 +36,16 @@
             composer = new THREE.EffectComposer( renderer );
             
             uniforms = {
-                uTime: { type: "f", value: 1.0 },
-                uResolution: { type: "v2", value: new THREE.Vector2() },
-                uMouse: { type: "v2", value: new THREE.Vector2() }
+                time: { type: "f", value: 1.0 },
+                resolution: { type: "v2", value: new THREE.Vector2() },
+                mouse: { type: "v2", value: new THREE.Vector2() }
             };
 
             if(webcam){
                 webcamTexture = new THREE.Texture( webcam );
                 webcamTexture.minFilter = THREE.LinearFilter;
                 webcamTexture.magFilter = THREE.LinearFilter;
-                uniforms.uWebcam = { type: "t", value: webcamTexture };
+                uniforms.webcam = { type: "t", value: webcamTexture };
             }
 
             addShader();
@@ -53,6 +56,29 @@
             $(document).on('mousemove', function(event){
                 mouse.x = event.pageX/window.innerWidth;
                 mouse.y = event.pageY/window.innerHeight;
+            });
+
+            var Controls = function() {
+                this.quality = 1;
+                this.hideCode = false;
+            };
+
+            controls = new Controls();
+            gui = new dat.GUI();
+            var mainFolder = gui.addFolder('Main Controls');
+            var userFolder = gui.addFolder('User Controls');
+            mainFolder.open();
+            userFolder.open();
+
+            var $codeMirrorContainer = $('#codemirror-container');
+            var hideCode = mainFolder.add(controls, 'hideCode');
+            hideCode.onFinishChange(function(value){
+                $codeMirrorContainer.toggleClass('disabled', value);
+            });
+            var quality = mainFolder.add(controls, 'quality', [0.5, 1, 2, 4, 8]);
+            quality.onFinishChange(function(value){
+                QUALITY = value;
+                onWindowResize();
             });
         }
 
@@ -107,7 +133,7 @@
         }
 
         function onWindowResize( event ) {
-            composer.setSize( window.innerWidth, window.innerHeight );
+            composer.setSize( window.innerWidth / QUALITY, window.innerHeight / QUALITY );
         }
 
         function animate() {
@@ -125,12 +151,12 @@
             if ( webcam && webcam.readyState === webcam.HAVE_ENOUGH_DATA && webcamTexture ){ webcamTexture.needsUpdate = true; }
 
             $.each(composer.passes, function( index, pass ){
-                if(webcam && webcamTexture){ pass.uniforms.uWebcam.value = webcamTexture; }
-                pass.uniforms.uTime.value = time;
-                pass.uniforms.uResolution.value.x = window.innerWidth;
-                pass.uniforms.uResolution.value.y = window.innerHeight;
-                pass.uniforms.uMouse.value.x = mouse.x;
-                pass.uniforms.uMouse.value.y = mouse.y;
+                if(webcam && webcamTexture){ pass.uniforms.webcam.value = webcamTexture; }
+                pass.uniforms.time.value = time;
+                pass.uniforms.resolution.value.x = window.innerWidth / QUALITY;
+                pass.uniforms.resolution.value.y = window.innerHeight / QUALITY;
+                pass.uniforms.mouse.value.x = mouse.x;
+                pass.uniforms.mouse.value.y = mouse.y;
             });
         }
 
