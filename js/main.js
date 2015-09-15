@@ -135,8 +135,6 @@ var data = {};
 
             uniforms[control.name] = { type: "f", value: control.value };
 
-            var newControl = null;
-
             switch(control.type){
                 case "checkbox":
                 break;
