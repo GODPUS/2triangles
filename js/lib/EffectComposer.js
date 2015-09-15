@@ -25,12 +25,6 @@ THREE.EffectComposer = function ( renderer, renderTarget ) {
 	this.readBuffer = this.renderTarget2;
 
 	this.passes = [];
-
-	if ( THREE.CopyShader === undefined )
-		console.error( "THREE.EffectComposer relies on THREE.CopyShader" );
-
-	this.copyPass = new THREE.ShaderPass( THREE.CopyShader );
-
 };
 
 THREE.EffectComposer.prototype = {
