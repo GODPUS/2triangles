@@ -1,20 +1,25 @@
+var data = {};
+
 ;(function($){
     $(function(){
         
         var container;
         var camera, scene, renderer, composer;
-        var lastPass = null;
+        var controlsFolder = null;
         var webcam = null;
-        var webcamTexture = new THREE.Texture({ minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+        var webcamTexture = new THREE.Texture();
+        webcamTexture.minFilter = THREE.LinearFilter;
+        webcamTexture.magFilter = THREE.LinearFilter;
 
-        var DEFAULT_VS = $('#vs').text().trim();
-        var DEFAULT_FS = $('#fs').text().trim();
-        var DEFAULT_UNIFORMS = {
+        var uniforms = {
             time: { type: "f", value: 1.0 },
             resolution: { type: "v2", value: new THREE.Vector2() },
             mouse: { type: "v2", value: new THREE.Vector2() },
             webcam: { type: "t", value: webcamTexture }
         };
+
+        var DEFAULT_VS = $('#vs').text().trim();
+        var DEFAULT_FS = $('#fs').text().trim();
         var MOUSE = { x: 0, y: 0 };
         var WIDTH = 0;
         var HEIGHT = 0;
@@ -22,43 +27,35 @@
         var START_TIME = Date.now();
         var GUI = new dat.GUI();
 
-        var controls ={};
-        var shaders = {};
-        var uniforms = {};
-
-        var defaultData = {
-            hideCode: false,
-            quality: 2,
-            webcam: false,
+        data = {
+            settings: {
+                hideCode: false,
+                quality: 2,
+                webcam: false
+            },
 
             controls: [
                 {
-                    name: "Speed",
-                    uniform: {
-                        name: "speed",
-                        type: "f",
-                        value: 50.0
-                    },
+                    name: "speed",
                     type: "slider",
-                    min: 0,
-                    max: 100
+                    min: 0.0,
+                    max: 1.0,
+                    step: 0.001,
+                    speed: 0.1
                 }
             ],
 
             shaders: [
                 {
-                    id: 0,
+                    id: generateUUID(),
                     name: "Default Shader",
                     vs: DEFAULT_VS,
-                    fs: DEFAULT_FS,
-                    active: true
+                    fs: DEFAULT_FS
                 }
             ]
         };
 
-        var data = $.extend(true, defaultData, {});
-
-        function init() {
+        function init3D() {
             container = document.getElementById('container');
 
             camera = new THREE.Camera();
@@ -71,41 +68,74 @@
             container.appendChild(renderer.domElement);
 
             composer = new THREE.EffectComposer(renderer);
+        }
 
+        function initGUI(){
 
-            var mainFolder = GUI.addFolder('Main Controls');
-            var userFolder = GUI.addFolder('User Controls');
-            mainFolder.open();
-            userFolder.open();
+            var settingsFolder = GUI.addFolder('Settings');
+            controlsFolder = GUI.addFolder('Controls');
+            settingsFolder.open();
+            controlsFolder.open();
 
-            var $codeMirrorContainer = $('#codemirror-container');
-            var hideCode = mainFolder.add(data, 'hideCode').listen();
-            hideCode.onFinishChange(function(value){
-                $codeMirrorContainer.toggleClass('disabled', value);
+            var hideCodeCheckbox = settingsFolder.add(data.settings, 'hideCode').listen();
+            hideCodeCheckbox.onFinishChange(function(value){
+                $('#codemirror-container').toggleClass('disabled', value);
             });
-            var quality = mainFolder.add(data, 'quality', [0.5, 1, 2, 4, 8]).listen();
-            quality.onFinishChange(function(value){
+            var qualityDropdown = settingsFolder.add(data.settings, 'quality', [0.5, 1, 2, 4, 8]).listen();
+            qualityDropdown.onFinishChange(function(value){
                 onWindowResize();
+            });
+            var webcamCheckbox = settingsFolder.add(data.settings, 'webcam').listen();
+            webcamCheckbox.onFinishChange(function(value){
+                if(value){
+                    getWebcam(function(_webcam){
+                        webcam = _webcam;
+                        webcamTexture.image = webcam;
+                        webcamTexture.needsUpdate = true;
+                    });
+                }else{
+                    webcam = null;
+                    webcamTexture.image = THREE.ImageUtils.generateDataTexture(0,0,0);
+                    webcamTexture.needsUpdate = true;
+                }
             });
 
             $.each(data.controls, function(index, control){
-                addControl(control);
+                addControl(control, false);
             });
+        }
 
+        function initShaders(){
             $.each(data.shaders, function(index, shader){
-                addShader(shader);
+                addShader(shader, false);
+            });
+        }
+
+        function initEvents(){
+            $('#add-shader-button').click(function(){ 
+                addShader({
+                    id: generateUUID(),
+                    name: "Default Shader",
+                    vs: DEFAULT_VS,
+                    fs: DEFAULT_FS
+                }, true); 
             });
 
-            onWindowResize();
-            window.addEventListener( 'resize', onWindowResize, false );
             $(document).on('mousemove', function(event){
                 MOUSE.x = event.pageX/window.innerWidth;
                 MOUSE.y = event.pageY/window.innerHeight;
             });
+
+            onWindowResize();
+            $(window).resize(onWindowResize);
         }
 
-        function addControl(control){
-            uniforms[control.uniform.name] = { type: control.uniform.type, value: control.uniform.value };
+        function addControl(control, addToData){
+            if(addToData){ data.controls.push(control); }
+
+            uniforms[control.name] = { type: "f", value: control.value };
+
+            var newControl = null;
 
             switch(control.type){
                 case "checkbox":
@@ -113,17 +143,20 @@
                 case "dropdown":
                 break;
                 case "slider":
+                    controlsFolder.add(control, control.name).min(control.min).max(control.max).step(control.step).listen();
                 break;
             }
         }
 
-        function addShader(shader){
-            var $tabButton = $('<button id="shader-tab-button--'+shader.id+'" class="shader-tab-button" data-shader-id="'+shader.id+'">'+shader.name+'</button>');
+        function addShader(shader, addToData){
+            if(addToData){ data.shaders.push(shader); }
+
+            var $tabButton = $('<button class="shader-tab-button" data-shader-id="'+shader.id+'">'+shader.name+'</button>');
             $tabButton.appendTo($('#shader-tab-buttons'));
             $tabButton.click(function(){ activateTab($(this).data('shader-id')); });
 
-            var $textArea = $('<textarea id="shader-tab-pane--'+shader.id+'" class="shader-tab-pane"></textarea>');
-            $textArea.text(fs);
+            var $textArea = $('<textarea class="shader-tab-pane"></textarea>');
+            $textArea.text(DEFAULT_FS);
             $textArea.appendTo($('#shader-tab-panes'));
 
             var editor = CodeMirror.fromTextArea($textArea[0], {
@@ -133,34 +166,33 @@
                 mode: 'x-shader/x-fragment'
             });
 
-            var pass = new THREE.ShaderPass({ uniforms: uniforms, vertexShader: vs, fragmentShader: fs });
+            $(editor.getWrapperElement()).attr('data-shader-id', shader.id);
+
+            var pass = new THREE.ShaderPass({ uniforms: uniforms, vertexShader: DEFAULT_VS, fragmentShader: DEFAULT_FS });
             composer.addPass(pass);
-            lastPass = composer.passes[composer.passes.length-1];
-            lastPass.renderToScreen = true;
+            composer.passes[composer.passes.length-1].renderToScreen = true;
 
             editor.on('change', function(){
                 pass.material.fragmentShader = editor.getValue();
                 pass.material.needsUpdate = true;
             });
 
-            activateTab(idCounter);
-
-            idCounter++;
-
-            render();
+            activateTab(shader.id);
         }
 
         function activateTab(id){
-            $.each(shaders, function(key, shader){
-                var isID = key.toString() === id.toString();
-                shader.$editor.toggleClass('active', isID);
-                shader.$tabButton.toggleClass('active', isID);
-            });
+            $('[data-shader-id]').not('[data-shader-id="'+id+'"]').removeClass('active');
+            $('[data-shader-id="'+id+'"]').addClass('active');
+        }
+
+        function saveToData(){
+            //ajax save data to db
+            console.log(data);
         }
 
         function onWindowResize(event) {
-            WIDTH = window.innerWidth / data.quality;
-            HEIGHT = window.innerHeight / data.quality;
+            WIDTH = window.innerWidth / data.settings.quality;
+            HEIGHT = window.innerHeight / data.settings.quality;
             composer.setSize(WIDTH, HEIGHT);
         }
 
@@ -185,12 +217,17 @@
                 pass.uniforms.resolution.value.y = HEIGHT;
                 pass.uniforms.mouse.value.x = MOUSE.x;
                 pass.uniforms.mouse.value.y = MOUSE.y;
+
+                $.each(data.controls, function(index, control){
+                    pass.uniforms[control.name].value = control[control.name];
+                });
             });
         }
 
-        $('#add-shader-button').click(function(){ addShader(); });
-
-        init();
+        init3D();
+        initGUI();
+        initShaders();
+        initEvents();
         animate();
 
     });
