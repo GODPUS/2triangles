@@ -15,15 +15,17 @@ var data = {};
             time: { type: "f", value: 1.0 },
             resolution: { type: "v2", value: new THREE.Vector2() },
             mouse: { type: "v2", value: new THREE.Vector2() },
+            scroll: { type: "f", value: 0.0 },
             webcam: { type: "t", value: webcamTexture }
         };
 
         var DEFAULT_VS = $('#vs').text().trim();
         var DEFAULT_FS = $('#fs').text().trim();
-        var MOUSE = { x: 0, y: 0 };
-        var WIDTH = 0;
-        var HEIGHT = 0;
-        var TIME = 0;
+        var MOUSE = { x: 0.0, y: 0.0 };
+        var SCROLL = 0.0;
+        var WIDTH = 0.0;
+        var HEIGHT = 0.0;
+        var TIME = 0.0;
         var START_TIME = Date.now();
         var GUI = new dat.GUI();
 
@@ -31,7 +33,7 @@ var data = {};
             settings: {
                 hideCode: false,
                 quality: 2,
-                webcam: false
+                webcam: true
             },
 
             controls: [
@@ -85,20 +87,18 @@ var data = {};
             qualityDropdown.onFinishChange(function(value){
                 onWindowResize();
             });
-            var webcamCheckbox = settingsFolder.add(data.settings, 'webcam').listen();
+            var webcamCheckbox = settingsFolder.add(data.settings, 'webcam');
             webcamCheckbox.onFinishChange(function(value){
                 if(value){
-                    getWebcam(function(_webcam){
-                        webcam = _webcam;
-                        webcamTexture.image = webcam;
-                        webcamTexture.needsUpdate = true;
-                    });
+                    getWebcam();
                 }else{
                     webcam = null;
                     webcamTexture.image = THREE.ImageUtils.generateDataTexture(0,0,0);
                     webcamTexture.needsUpdate = true;
                 }
             });
+
+            if(data.settings.webcam){ getWebcam(); }
 
             $.each(data.controls, function(index, control){
                 addControl(control, false);
@@ -121,13 +121,34 @@ var data = {};
                 }, true); 
             });
 
+            var $addControlBtn = $('#add-control-btn');
+            $addControlBtn.insertAfter('.dg.main .close-button');
+            $addControlBtn.click(function(){
+                $('#add-control-dialog').fadeIn(300);
+            });
+
             $(document).on('mousemove', function(event){
                 MOUSE.x = event.pageX/window.innerWidth;
                 MOUSE.y = event.pageY/window.innerHeight;
             });
 
+            var $window = $(window);
+
+            $window.on('mousewheel', function(event) {
+                SCROLL += (event.originalEvent.deltaY)*-1.0;
+                if(SCROLL < 0){ SCROLL = 0.0; }
+            });
+
             onWindowResize();
-            $(window).resize(onWindowResize);
+            $window.resize(onWindowResize);
+        }
+
+        function getWebcam(){
+            getWebcamFromVideo(function(_webcam){
+                webcam = _webcam;
+                webcamTexture.image = webcam;
+                webcamTexture.needsUpdate = true;
+            });
         }
 
         function addControl(control, addToData){
@@ -215,6 +236,7 @@ var data = {};
                 pass.uniforms.resolution.value.y = HEIGHT;
                 pass.uniforms.mouse.value.x = MOUSE.x;
                 pass.uniforms.mouse.value.y = MOUSE.y;
+                pass.uniforms.scroll.value = SCROLL;
 
                 $.each(data.controls, function(index, control){
                     pass.uniforms[control.name].value = control[control.name];

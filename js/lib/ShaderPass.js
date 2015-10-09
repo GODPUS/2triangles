@@ -2,12 +2,10 @@
  * @author alteredq / http://alteredqualia.com/
  */
 
-THREE.ShaderPass = function ( shader, textureID ) {
-
-	this.textureID = ( textureID !== undefined ) ? textureID : "texture";
-
+THREE.ShaderPass = function ( shader ) {
 	this.uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-	this.uniforms[ this.textureID ] = { type: "t", value: null };
+	this.uniforms.texture = { type: "t", value: null };
+	this.uniforms.backbuffer = { type: "t", value: null };
 
 	this.material = new THREE.ShaderMaterial( {
 
@@ -37,9 +35,7 @@ THREE.ShaderPass.prototype = {
 
 	render: function ( renderer, writeBuffer, readBuffer ) {
 
-		if ( this.uniforms[ this.textureID ] ) {
-			this.uniforms[ this.textureID ].value = readBuffer;
-		}
+		this.uniforms.texture.value = readBuffer;
 
 		renderer.render( this.scene, this.camera, writeBuffer, this.clear );
 

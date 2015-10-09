@@ -14,7 +14,7 @@ function generateUUID(){
     return uuid;
 }
 
-function getWebcam(callback){
+function getWebcamFromVideo(callback){
     //Use webcam
     var webcam = document.createElement('video');
     webcam.width = 320;

@@ -99,6 +99,16 @@
             width: 100%;
             cursor: pointer;
         }
+
+        #add-control-dialog {
+            position: absolute;
+            width: 80%;
+            top: 200px;
+            padding: 100px;
+            background-color: #ccc;
+            color: #000;
+            display: none;
+        }
     </style>
     <body>
         <div id="container">
@@ -110,6 +120,20 @@
                 <div id="codemirror-container__right">
                     <div id="shader-tab-panes"></div>
                 </div>
+            </div>
+        </div>
+        <button id="add-control-btn" style="margin-top: 20px;">Add Control</button>
+        <div id="add-control-dialog">
+            <p>Select control type</p>
+            <select id="select-control-type">
+                <option value="slider">Slider</option>
+                <option value="checkbox">Checkbox</option>
+                <option value="dropdown">Dropdown</option>
+            </select>
+
+            <div id="slider-values">
+                <label for="value">Value</label>
+                <input type="text" id="value" />
             </div>
         </div>
         <script src="js/lib/jquery-1.11.3.min.js"></script>
@@ -147,6 +171,8 @@ void main() {
     vec2 uv = gl_FragCoord.xy / resolution.xy;
     vec4 webcamRGBA = texture2D(webcam, uv);
     vec4 textureRGBA = texture2D(texture, uv);
+  
+    if(webcamRGBA.r < mouse.x){ webcamRGBA = textureRGBA; }
     
     gl_FragColor = vec4(webcamRGBA.rgb, 1.0);
 }
