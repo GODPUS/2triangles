@@ -139,7 +139,7 @@ var data = {};
                 if(SCROLL < 0){ SCROLL = 0.0; }
             });
 
-            onWindowResize();
+            setTimeout(onWindowResize, 3000);
             $window.resize(onWindowResize);
         }
 
@@ -148,6 +148,7 @@ var data = {};
                 webcam = _webcam;
                 webcamTexture.image = webcam;
                 webcamTexture.needsUpdate = true;
+                onWindowResize();
             });
         }
 
@@ -187,7 +188,7 @@ var data = {};
 
             $(editor.getWrapperElement()).attr('data-shader-id', shader.id);
 
-            var pass = new THREE.ShaderPass({ uniforms: uniforms, vertexShader: DEFAULT_VS, fragmentShader: DEFAULT_FS });
+            var pass = new THREE.ShaderPass({ uniforms: uniforms, vertexShader: DEFAULT_VS, fragmentShader: DEFAULT_FS }, renderer);
             composer.addPass(pass);
             composer.passes[composer.passes.length-1].renderToScreen = true;
 
